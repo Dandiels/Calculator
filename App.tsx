@@ -1,118 +1,136 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { Component } from "react";
+import { StyleSheet, View, ViewStyle } from "react-native";
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import Button from "./src/components/Button";
+import Display from "./src/components/Display";
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const initialState =
+{
+    displayValue: "0",
+    clearDisplay: false,
+    operation: null,
+    values: [0, 0],
+    current: 0
+};
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+export default class App extends Component
+{
+    state = { ...initialState };
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
+    addDigit = (digit: string): void =>
+    {
+        const clearDisplay = this.state.displayValue === "0" || this.state.clearDisplay;
+        const currentValue = clearDisplay ? "" : this.state.displayValue;
+        const displayValue = currentValue + digit;
+
+        if (digit === "." && !clearDisplay && this.state.displayValue.includes("."))
+        {
+            return;
+        }
+
+        this.setState({ displayValue, clearDisplay: false });
+
+        if (digit !== ".")
+        {
+            const newValue = parseFloat(displayValue);
+            const values = [...this.state.values];
+            values[this.state.current] = newValue;
+
+            this.setState({ values });
+        }
+    }
+
+    clearMemory = (): void =>
+    {
+        this.setState({ ...initialState });
+    }
+
+    setOperation = (operation: string): void =>
+    {
+        if (this.state.current === 0)
+        {
+            this.setState({ operation, current: 1, clearDisplay: true });
+        }
+        else
+        {
+            const equals = operation === "=";
+            const values = [...this.state.values];
+
+            try
+            {
+                values[0] = eval(`${values[0]} ${this.state.operation} ${values[1]}`);
+            }
+            catch (error)
+            {
+                values[0] = this.state.values[0];
+            }
+
+            values[1] = 0;
+
+            this.setState({ displayValue: `${values[0]}`, operation: equals ? null : operation, current: equals ? 0 : 1, clearDisplay: true, values });
+        }
+    }
+    
+    render(): React.JSX.Element
+    {
+        const { displayValue } = this.state;
+        
+        return (
+            <View style={style.container}>
+                <Display displayValue={displayValue} />
+                <View style={style.buttons}>
+                    <View style={style.row}>
+                        <Button label="AC" triple onClick={this.clearMemory} />
+                        <Button label="/" operation onClick={this.setOperation} />
+                    </View>
+                    <View style={style.row}>
+                        <Button label="7" onClick={this.addDigit} />
+                        <Button label="8" onClick={this.addDigit} />
+                        <Button label="9" onClick={this.addDigit} />
+                        <Button label="*" operation onClick={this.setOperation} />
+                    </View>
+                    <View style={style.row}>
+                        <Button label="4" onClick={this.addDigit} />
+                        <Button label="5" onClick={this.addDigit} />
+                        <Button label="6" onClick={this.addDigit} />
+                        <Button label="-" operation onClick={this.setOperation} />
+                    </View>
+                    <View style={style.row}>
+                        <Button label="1" onClick={this.addDigit} />
+                        <Button label="2" onClick={this.addDigit} />
+                        <Button label="3" onClick={this.addDigit} />
+                        <Button label="+" operation onClick={this.setOperation} />
+                    </View>
+                    <View style={style.row}>
+                        <Button label="0" double onClick={this.addDigit} />
+                        <Button label="." onClick={this.addDigit} />
+                        <Button label="=" operation onClick={this.setOperation} />
+                    </View>
+                </View>
+            </View>
+        );
+    }
 }
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+type Styles =
+{
+    container: ViewStyle;
+    buttons: ViewStyle;
+    row: ViewStyle;
 }
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+const style: Styles = StyleSheet.create<Styles>
+({
+    container:
+    {
+        flex: 1
+    },
+    buttons:
+    {
+        flexWrap: "wrap"
+    },
+    row:
+    {
+        flexDirection: "row"
+    }
 });
-
-export default App;
